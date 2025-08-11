@@ -1,0 +1,4 @@
+pip install streamlit requests prophet plotly pandas
+pip install streamlit requests pandas ta xgboost scikit-learn plotly
+pip install streamlit xgboost pandas ta plotly seaborn matplotlib scikit-learn
+pip install xlsxwriter
