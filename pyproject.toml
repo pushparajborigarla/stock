@@ -1,4 +1,6 @@
 [project]
+[tool.poetry]
+package-mode = false
 name = "stock-app"
 version = "0.1.0"
 requires-python = ">=3.10"
