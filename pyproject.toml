@@ -1,0 +1,18 @@
+[project]
+name = "stock-app"
+version = "0.1.0"
+
+dependencies = [
+    "streamlit",
+    "pandas",
+    "numpy",
+    "plotly",
+    "matplotlib",
+    "seaborn",
+    "scikit-learn",
+    "xgboost",
+    "prophet",
+    "requests",
+    "ta",
+    "xlsxwriter"
+]
