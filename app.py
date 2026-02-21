@@ -6,7 +6,6 @@ import xgboost as xgb
 from prophet import Prophet
 from prophet.plot import plot_plotly
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from ta import add_all_ta_features
 import plotly.graph_objs as go
 import base64
 import io
@@ -63,7 +62,12 @@ if df.empty:
     st.stop()
 
 df = df[(df["date"] >= pd.to_datetime(start_date)) & (df["date"] <= pd.to_datetime(end_date))]
-df = add_all_ta_features(df, open="open", high="high", low="low", close="close", volume="volume", fillna=True)
+df = df[(df["date"] >= pd.to_datetime(start_date)) & (df["date"] <= pd.to_datetime(end_date))]
+
+# Lightweight technical indicators (faster)
+df["ma_10"] = df["close"].rolling(10).mean()
+df["ma_30"] = df["close"].rolling(30).mean()
+df["volatility"] = df["close"].rolling(10).std()
 
 # Shift target (next-day closing price)
 df["target"] = df["close"].shift(-1)
@@ -77,14 +81,28 @@ X_train, X_test = X[:split_index], X[split_index:]
 y_train, y_test = y[:split_index], y[split_index:]
 
 # Train XGBoost
-model = xgb.XGBRegressor(objective='reg:squarederror', n_estimators=100)
-model.fit(X_train, y_train)
+@st.cache_resource
+def train_xgb(X_train, y_train):
+    model = xgb.XGBRegressor(
+        objective='reg:squarederror',
+        n_estimators=50,
+        max_depth=4
+    )
+    model.fit(X_train, y_train)
+    return model
+
+model = train_xgb(X_train, y_train)
 y_pred_xgb = model.predict(X_test)
 
 # Train Prophet
 df_prophet = df[["date", "close"]].rename(columns={"date": "ds", "close": "y"})
-prophet_model = Prophet()
-prophet_model.fit(df_prophet)
+@st.cache_resource
+def train_prophet(df_prophet):
+    model = Prophet()
+    model.fit(df_prophet)
+    return model
+
+prophet_model = train_prophet(df_prophet)
 
 # Forecast range selector
 forecast_range = st.selectbox("Forecast Range", ["Next Day", "1 Month", "3 Months", "1 Year"])
