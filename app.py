@@ -186,7 +186,7 @@ fig_xgb_future.add_trace(
     go.Scatter(
         x=xgb_future_df["date"],
         y=xgb_future_df["xgb_forecast"],
-        mode="lines",
+        mode="lines+markers" if future_days == 1 else "lines",
         name="XGBoost Forecast"
     )
 )
