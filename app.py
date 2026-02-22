@@ -102,7 +102,7 @@ def forecast_xgb_future(model, df, future_days):
         last_row = df_future.iloc[-1:].drop(columns=["date", "target"])
         next_pred = model.predict(last_row)[0]
 
-        next_date = df_future["date"].iloc[-1] + pd.Timedelta(days=1)
+        next_date = df_future["date"].iloc[-1] + pd.offsets.BDay(1)
 
         new_row = df_future.iloc[-1:].copy()
         new_row["date"] = next_date
