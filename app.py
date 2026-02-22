@@ -93,6 +93,38 @@ def train_xgb(X_train, y_train):
 
 model = train_xgb(X_train, y_train)
 y_pred_xgb = model.predict(X_test)
+# 🔮 XGBoost Future Forecast Function
+def forecast_xgb_future(model, df, future_days):
+    df_future = df.copy()
+    predictions = []
+
+    for _ in range(future_days):
+        last_row = df_future.iloc[-1:].drop(columns=["date", "target"])
+        next_pred = model.predict(last_row)[0]
+
+        next_date = df_future["date"].iloc[-1] + pd.Timedelta(days=1)
+
+        new_row = df_future.iloc[-1:].copy()
+        new_row["date"] = next_date
+        new_row["close"] = next_pred
+
+        # Recalculate lightweight features
+        new_row["ma_10"] = df_future["close"].rolling(10).mean().iloc[-1]
+        new_row["ma_30"] = df_future["close"].rolling(30).mean().iloc[-1]
+        new_row["volatility"] = df_future["close"].rolling(10).std().iloc[-1]
+
+        df_future = pd.concat([df_future, new_row], ignore_index=True)
+        predictions.append(next_pred)
+
+    future_dates = pd.date_range(
+        start=df["date"].iloc[-1] + pd.Timedelta(days=1),
+        periods=future_days
+    )
+
+    return pd.DataFrame({
+        "date": future_dates,
+        "xgb_forecast": predictions
+    })
 
 # Train Prophet
 df_prophet = df[["date", "close"]].rename(columns={"date": "ds", "close": "y"})
@@ -109,6 +141,9 @@ forecast_range = st.selectbox("Forecast Range", ["Next Day", "1 Month", "3 Month
 future_periods = {"Next Day": 1, "1 Month": 30, "3 Months": 90, "1 Year": 365}
 future = prophet_model.make_future_dataframe(periods=future_periods[forecast_range])
 forecast = prophet_model.predict(future)
+# 🔮 XGBoost Future Forecast
+future_days = future_periods[forecast_range]
+xgb_future_df = forecast_xgb_future(model, df, future_days)
 
 # Metrics
 y_true_prophet = df_prophet["y"].iloc[-len(forecast["yhat"]):]
@@ -143,6 +178,20 @@ with col2:
 st.subheader(f"📉 Prophet Forecast: {forecast_range}")
 fig1 = plot_plotly(prophet_model, forecast)
 st.plotly_chart(fig1)
+# 📈 XGBoost Future Forecast Plot
+st.subheader(f"🚀 XGBoost Future Forecast: {forecast_range}")
+
+fig_xgb_future = go.Figure()
+fig_xgb_future.add_trace(
+    go.Scatter(
+        x=xgb_future_df["date"],
+        y=xgb_future_df["xgb_forecast"],
+        mode="lines",
+        name="XGBoost Forecast"
+    )
+)
+
+st.plotly_chart(fig_xgb_future)
 
 # 📈 Actual vs Predicted with XGBoost
 st.subheader("📈 XGBoost Actual vs Predicted")
