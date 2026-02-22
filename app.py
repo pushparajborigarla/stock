@@ -42,7 +42,7 @@ def fetch_data(symbol):
         "symbol": symbol,
         "interval": "1day",
         "outputsize": 5000,
-        "apikey": "YOUR_API_KEY"
+        "apikey": "b5354a5f939342ccaffd646871fc6f7a"
     }
     response = requests.get(url, params=params)
     data = response.json()
