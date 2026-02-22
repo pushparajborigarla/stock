@@ -128,18 +128,27 @@ def forecast_xgb_future(model, df, future_days):
 
 # Train Prophet
 df_prophet = df[["date", "close"]].rename(columns={"date": "ds", "close": "y"})
+# Backtest option
+backtest_mode = st.button("🔁 Forecast From Past 3 Days")
 @st.cache_resource
 def train_prophet(df_prophet):
     model = Prophet()
     model.fit(df_prophet)
     return model
 
-prophet_model = train_prophet(df_prophet)
+if backtest_mode:
+    df_prophet_train = df_prophet.iloc[:-3]
+else:
+    df_prophet_train = df_prophet
+
+prophet_model = train_prophet(df_prophet_train)
 
 # Forecast range selector
 forecast_range = st.selectbox("Forecast Range", ["Next Day", "1 Month", "3 Months", "1 Year"])
 future_periods = {"Next Day": 1, "1 Month": 30, "3 Months": 90, "1 Year": 365}
-future = prophet_model.make_future_dataframe(periods=future_periods[forecast_range])
+future = prophet_model.make_future_dataframe(
+    periods=future_periods[forecast_range] + (3 if backtest_mode else 0)
+)
 forecast = prophet_model.predict(future)
 # 🔮 XGBoost Future Forecast
 future_days = future_periods[forecast_range]
